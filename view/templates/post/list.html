@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post List</title>
+</head>
+<body>
+    <!-- 테이블을 표시할 공간 -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>View Count</th>
+                <th>Member Name</th>
+            </tr>
+        </thead>
+        <tbody id="postTableBody">
+        </tbody>
+    </table>
+
+    <!-- 이전 페이지로 이동하는 버튼 -->
+    <button id="leftButton">Previous</button>
+    
+    <!-- 페이지 버튼이 표시될 공간 -->
+    <span id="pageButtons"></span>
+    
+    <!-- 다음 페이지로 이동하는 버튼 -->
+    <button id="rightButton">Next</button>
+
+    <script>
+// 필요한 요소들을 가져옴
+const postTableBody = document.getElementById("postTableBody");
+=
+
+// 현재 페이지와 최대 페이지를 저장할 변수
+let currentPage = 1;
+let maxPage = 1; // 초기 값은 1
+
+// 서버로부터 데이터를 가져와서 테이블에 표시하는 함수
+const getList = (page) => {
+    fetch(`http://127.0.0.1:8000/post/list/${page}`)
+        .then((response) => response.json())
+        .then((data) => {
+            showList(data); // 가져온 데이터로 테이블을 표시함
+            maxPage = Math.ceil(data.totalCount / 5); // 전체 페이지 수 계산
+            updatePageButtons(); // 페이지 버튼 업데이트
+        });
+};
+
+// 테이블에 데이터를 표시하는 함수
+const showList = (postData) => {
+    const posts = postData.posts;
+    postTableBody.innerHTML = ""; // Clear the table body
+
+    posts.forEach(post => {
+        postTableBody.innerHTML += `
+            <tr>
+                <td>${post.id}</td>
+                <td><a href="/post/detail/?id=${post.id}">${post.post_title}</a></td>
+                <td>${post.post_view_count}</td>
+                <td>${post.member_name}</td>
+            </tr>
+        `;
+    });
+};
+
+
+const leftButton = document.getElementById("leftButton");
+const rightButton = document.getElementById("rightButton");
+const pageButtonsContainer = document.getElementById("pageButtons");
+
+// 페이지 버튼을 생성하고 업데이트하는 함수
+const updatePageButtons = () => {
+    pageButtonsContainer.innerHTML = "";
+    let startPage = Math.max(1, currentPage - 2); // 시작 페이지 계산
+
+    // 현재 페이지가 5단위로 위치하도록 조정
+    startPage = Math.floor((currentPage - 1) / 5) * 5 + 1;
+
+    const endPage = Math.min(maxPage, startPage + 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        const pageButton = document.createElement("button");
+        pageButton.textContent = i;
+        pageButton.dataset.page = i;
+        pageButton.classList.add("pageButton");
+        if (i === currentPage) {
+            pageButton.classList.add("active");
+        }
+        pageButton.addEventListener("click", () => {
+            currentPage = i;
+            getList(currentPage);
+        });
+        pageButtonsContainer.appendChild(pageButton);
+    }
+};
+
+// 좌 버튼 클릭 이벤트 처리
+leftButton.addEventListener('click', () => {
+    if (currentPage > 1) {
+        currentPage--;
+        getList(currentPage);
+    }
+});
+
+// 우 버튼 클릭 이벤트 처리
+rightButton.addEventListener('click', () => {
+    if (currentPage < maxPage) {
+        currentPage++;
+        getList(currentPage);
+    }
+});
+
+// 초기 페이지 로드
+getList(currentPage);
+
+    </script>
+</body>
+</html>
